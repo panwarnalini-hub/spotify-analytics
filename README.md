@@ -1,78 +1,99 @@
-#  Spotify Listening Analytics
+# Spotify Listening Analytics Dashboard
 
-This project fetches my Spotify listening history using the Spotify Web API, stores it in a CSV, and prepares it for analytics with Databricks + Power BI.
+This project analyzes my Spotify listening history using **Spotify Web API**, **Databricks (PySpark + SQL)**, and **Power BI**.  
 
----
+> **Inspiration:**  
+> The release of Taylor Swift’s new album *The Life of a Showgirl* made me curious about how much her music really dominates my playlists, and how my listening changes by time of day and week.
 
-##  Inspiration
-When Taylor Swift’s new album *Life of a Showgirl* was released, I found myself looping it non-stop. That got me curious about my actual listening patterns on Spotify:
 
-- Which artists do I really listen to the most?  
-- Do I listen more at night or during the day?  
-- How much time do I spend on music every week?  
-- How do new releases change my listening behavior?  
-
-That curiosity inspired me to build this project.
 
 ---
 
-## Project Structure
+## Pipeline Overview
 
-The project is organized as follows:
+The pipeline follows the **Bronze - Silver - Gold** model:  
 
-- **spotify_fetch.py**: Python script that connects to the Spotify API and fetches my recently played songs.  
-- **spotify_recent.csv**: CSV file that stores the incremental dataset of my listening history.  
-- **requirements.txt**: List of Python dependencies (mainly `spotipy` and `pandas`).  
-- **README.md**: Documentation of the project, setup instructions, and explanation of the pipeline.  
-
----
-
-## How It Works
-1. **Data Source**  
-   - Spotify Web API (`user-read-recently-played` scope).  
-   - Fetches the **last 50 played tracks**.  
-
-2. **Ingestion Script (`spotify_fetch.py`)**  
-   - Uses `spotipy` to authenticate.  
-   - Saves listening history into `spotify_recent.csv`.  
-   - Automatically appends new songs each run (deduplicated by `played_at`).  
-
-3. **Pipeline Plan**  
-   - **Bronze Layer**: Raw `spotify_recent.csv` in Databricks.  
-   - **Silver Layer**: Cleaned tables (track, artist, album, played_date, played_hour, duration_min).  
-   - **Gold Layer**: Aggregated analytics (listening hours, top artists per month, daily patterns).  
-
-4. **Visualization (Power BI)**  
-   Planned dashboards:  
-   - Top Artists & Tracks  
-   - Listening Heatmap (by hour/day)  
-   - Monthly Trends (listening hours, new releases impact)  
-   - Album Release Effect (e.g., Taylor Swift’s *Life of a Showgirl*)  
+- **Bronze** - Raw listening history from Spotify API stored in CSV  
+- **Silver** - Cleaned dataset with track, artist, album, played_date, hour, weekday/weekend  
+- **Gold** - Aggregated analytics tables for Power BI visualizations  
 
 ---
 
-## Getting Started
-1. Clone this repo.  
-2. Install dependencies:  
-   ```bash
-   pip install -r requirements.txt
-3. Create a Spotify Developer App → get your CLIENT_ID, CLIENT_SECRET, REDIRECT_URI.
-4. Update spotify_fetch.py with your credentials.
-5. Run:
-```bash
-python spotify_fetch.py
+## Implementation
+
+### 1. Ingesting Data from Spotify  
+I used the **Spotify Web API** to fetch my listening history. The data is stored in a CSV file `spotify_recent.csv`.  
+
+### 2. Cleaning & Transforming with PySpark
+
+```python
+df = spark.read \
+    .format("csv") \
+    .option("header", "true") \
+    .option("inferSchema", "true") \
+    .load("/FileStore/spotify_recent.csv")
+
+df_clean = df.withColumn("played_date", to_date("played_at")) \
+             .withColumn("hour", hour("played_at")) \
+             .withColumn("day_of_week", date_format("played_at", "E"))
 ```
+### 3. Aggregations
+
+The data was aggregated using **PySpark transformations** inside Databricks.  
+
+For example, I grouped by artist to count total plays:
+
+```python
+gold_top_artists = silver_df.groupBy("artist") \
+    .count() \
+    .orderBy(col("count").desc())
+```
+If needed, the same logic could also be expressed in SQL (Databricks SQL):
+```sql
+-- Top Artists
+SELECT artist, COUNT(*) AS song_count
+FROM silver_tracks
+GROUP BY artist
+ORDER BY song_count DESC;
+```
+Full transformations and aggregations can be found in the [Spotify Analysis Notebook](./spotify_analysis.ipynb).
+
+## Power BI Dashboard  
+
+The **Gold Layer** was connected to Power BI (DirectQuery mode).  
+
+### Dashboard Highlights  
+- **Top Artists & Songs** = Who I listen to most  
+- **Peak Listening Hours** = Morning, afternoon, night trends  
+- **Weekday vs Weekend** = Do I stream more on weekdays or weekends?  
+- **Listening Trends Over Time** = Daily/weekly listening patterns  
+- **Album Popularity** = Which albums dominate (*spoiler: Taylor Swift*)  
+
+
 ---
 
-## Challenges & Learnings
-- Setting up Spotify API credentials and redirect URI.  
-- Handling duplicates in listening history.  
-- Organizing the project for pipelines (Bronze → Silver → Gold).  
+## Screenshots  
+![Dashboard Screenshot 1](./images/screenshot1.jpg)  
+![Dashboard Screenshot 2](./images/screenshot2.jpg)  
 
 ---
 
-## Next Steps
-- Automate daily data fetch with Task Scheduler.  
-- Build Databricks SQL transformations.  
-- Publish Power BI dashboard screenshots.  
-- Extend analysis with Spotify Audio Features (tempo, danceability, energy).  
+## Learnings  
+
+- How to authenticate and pull data from the **Spotify Web API**  
+- Cleaning and transforming event logs with **PySpark**  
+- Creating **Gold aggregations** with SQL  
+- Connecting **Databricks SQL to Power BI**  
+- Designing a **Spotify-themed dashboard**  
+
+---
+
+## Next Steps  
+
+- Automate daily ingestion with a scheduler  
+- Add more features from Spotify (tempo, danceability, energy)  
+- Compare listening trends before and after **Taylor Swift’s album drops**  
+
+---
+
+*Built with Databricks + Power BI. Fueled by Taylor Swift on repeat.*
