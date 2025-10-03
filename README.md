@@ -16,16 +16,15 @@ That curiosity inspired me to build this project.
 
 ---
 
-##  Project Structure
+## Project Structure
 
-```text
-spotify-project/
-│
-├── spotify_fetch.py # Python script to fetch data from Spotify API
-├── spotify_recent.csv # Incremental dataset of listening history
-├── requirements.txt # Required Python libraries (spotipy, pandas)
-└── README.md # Project documentation
-```
+The project is organized as follows:
+
+- **spotify_fetch.py**: Python script that connects to the Spotify API and fetches my recently played songs.  
+- **spotify_recent.csv**: CSV file that stores the incremental dataset of my listening history.  
+- **requirements.txt**: List of Python dependencies (mainly `spotipy` and `pandas`).  
+- **README.md**: Documentation of the project, setup instructions, and explanation of the pipeline.  
+
 ---
 
 ## How It Works
