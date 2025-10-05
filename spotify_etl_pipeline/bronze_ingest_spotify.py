@@ -1,4 +1,8 @@
 # Databricks notebook source
+#Check for spotipy module each time this code runs
+import sys
+import subprocess
+subprocess.run([sys.executable, "-m", "pip", "install", "spotipy", "pandas"], check=True)
 # Databricks Spotify Auto Ingestion Script
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
