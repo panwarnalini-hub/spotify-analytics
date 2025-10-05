@@ -1,7 +1,8 @@
 # Databricks notebook source
-#Check for spotipy module each time this code runs
+# Databricks Spotify Auto Ingestion Script
 import sys
 import subprocess
+# Auto-install required libraries when running in Databricks pipeline
 subprocess.run([sys.executable, "-m", "pip", "install", "spotipy", "pandas"], check=True)
 # Databricks Spotify Auto Ingestion Script
 import spotipy
